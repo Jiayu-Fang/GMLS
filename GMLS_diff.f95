@@ -301,8 +301,8 @@ SUBROUTINE MATRIX_INV_POLY(XYZ_NUM,ORD_NUM,RF_NUM,XYZ_L,WL,RM,A_POLY,X_INI,Y_INI
  INTEGER :: RF_NUM,XYZ_NUM,ORD_NUM
  INTEGER :: IK,JK,KK,N,NK,I,J,K
  REAL (KIND = 8) :: XYZ_L(XYZ_NUM,2),AK(XYZ_NUM,RF_NUM)
- REAL (KIND = 8) :: A(RF_NUM,RF_NUM),L(RF_NUM,RF_NUM),U(RF_NUM,RF_NUM)
- REAL (KIND = 8) :: LI(RF_NUM,RF_NUM),UI(RF_NUM,RF_NUM),A_INV(RF_NUM,RF_NUM)
+ REAL (KIND = 8) :: A(RF_NUM,RF_NUM)
+ REAL (KIND = 8) :: A_INV(RF_NUM,RF_NUM)
  REAL (KIND = 8) :: WL(XYZ_NUM)
  REAL (KIND = 8) :: A_POLY(XYZ_NUM,5)
  REAL (KIND = 8) :: A_POLY1(RF_NUM,XYZ_NUM)
@@ -332,85 +332,8 @@ SUBROUTINE MATRIX_INV_POLY(XYZ_NUM,ORD_NUM,RF_NUM,XYZ_L,WL,RM,A_POLY,X_INI,Y_INI
  	END DO
  END DO
 
- L = 0.0; U = 0.0
- DO IK = 1,RF_NUM
- 	JK = IK
- 	L(IK,JK) = 1.0
- END DO
- 
-! LU Decomposition
- DO JK = 1,RF_NUM
- 	U(1,JK) = A(1,JK)
- END DO
- DO IK = 2,RF_NUM
- 	L(IK,1) = A(IK,1)/U(1,1)
- 	DO JK = 2,IK-1
- 		XK = A(IK,JK)
- 		DO KK = 1,JK-1
- 			XK = XK-L(IK,KK)*U(KK,JK)
- 		END DO
- 		IF (ABS(U(JK,JK)).LT.1.0E-10) THEN 
- 			L(IK,JK) = 0.0
- 			WRITE (*,*) 'WARNING'   ! Meaning it is nearly singular
- 		ELSE 
- 			L(IK,JK) = XK/U(JK,JK)
- 		END IF
- 	END DO
- 	DO JK = IK,RF_NUM
- 		XK = A(IK,JK)
- 		DO KK = 1,JK-1
- 			XK = XK-L(IK,KK)*U(KK,JK)
- 		END DO
- 		U(IK,JK) = XK/1.0
- 	END DO
- END DO
- 
-! Computing the inverse of L AND U MATRIX
-! For U
- LI = 0.0; UI = 0.0
- DO IK = 1,RF_NUM
- 	DO JK = 1,RF_NUM
- 		IF (IK.EQ.JK) THEN 
- 			XK = 1.0
- 		ELSE 
- 			XK = 0.0
- 		END IF
- 		DO KK = 1,JK-1
- 			XK = XK-UI(IK,KK)*U(KK,JK)
- 		END DO
- 		IF (ABS(U(JK,JK)).LT.1.0E-10) THEN 
- 			UI(IK,JK) = 0.0
- 			WRITE (*,*) 'WARNING'
- 		ELSE  
- 			UI(IK,JK) = XK/U(JK,JK)
- 		END IF
- 	END DO
- END DO
-
-! For L
- DO IK = 1,RF_NUM
- 	DO JK = RF_NUM,1,-1
- 		IF (IK.EQ.JK) THEN 
- 			XK = 1.0
- 		ELSE 
- 			XK = 0.0
- 		END IF
- 		DO KK = RF_NUM,JK+1,-1
- 			XK = XK-LI(IK,KK)*L(KK,JK)
- 		END DO
- 		LI(IK,JK) = XK
- 	END DO
- END DO
-
-! For the final inverse of A
- A_INV = 0.0
- DO IK = 1,RF_NUM
- 	DO JK = 1,RF_NUM
- 		DO KK = 1,RF_NUM
- 			A_INV(IK,JK) = A_INV(IK,JK)+UI(IK,KK)*LI(KK,JK)
- 		END DO
- 	END DO
- END DO
+! Compute the inverse
+ CALL LU_INVERSE(RF_NUM,A,A_INV)
  
  A_POLY = 0.0; A_POLY1 = 0.0
  DO IK = 1,RF_NUM
